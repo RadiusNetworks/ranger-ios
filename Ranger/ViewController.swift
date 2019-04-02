@@ -26,6 +26,29 @@ class ViewController: UIViewController {
     }
   }
   
+  struct Beacon : Equatable {
+    let major: NSNumber
+    let minor: NSNumber
+    
+    static func == (lhs: Beacon, rhs: Beacon) -> Bool {
+      return
+        lhs.major == rhs.major &&
+          lhs.minor == rhs.minor
+    }
+    
+    init(major: NSNumber, minor: NSNumber) {
+      self.major = major
+      self.minor = minor
+    }
+    
+    init(beacon: CLBeacon) {
+      major = beacon.major
+      minor = beacon.minor
+    }
+  }
+  
+  var rangedBeacons: [(beacon: Beacon, lastSeen: Date)] = []
+  
   override func viewDidLoad() {
     super.viewDidLoad()
     configureKeyboard()
@@ -59,7 +82,19 @@ extension ViewController : CLLocationManagerDelegate {
   
   func locationManager(_ manager: CLLocationManager, didRangeBeacons beacons: [CLBeacon], in region: CLBeaconRegion) {
     beacons.forEach { (beacon) in
-      NSLog("Major: \(beacon.major), Minor: \(beacon.minor)")
+      if let entryIndex = rangedBeacons.firstIndex(where: { (entry) -> Bool in
+        return entry.beacon == Beacon(beacon: beacon)
+      }) {
+        rangedBeacons[entryIndex].lastSeen = Date()
+        tableView.reloadRows(at: [IndexPath(row: entryIndex, section: 0)], with: .fade)
+      }
+      else {
+        tableView.beginUpdates()
+        let rangedBeaconCount = rangedBeacons.count
+        rangedBeacons.append((beacon: Beacon(major: beacon.major, minor: beacon.minor), lastSeen: Date()))
+        tableView.insertRows(at: [IndexPath(row: rangedBeaconCount, section: 0)], with: .bottom)
+        tableView.endUpdates()
+      }
     }
   }
   
@@ -80,15 +115,21 @@ extension ViewController : CLLocationManagerDelegate {
 
 extension ViewController : UITableViewDataSource {
   func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-    return 0
+    return rangedBeacons.count
+  }
+  
+  func numberOfSections(in tableView: UITableView) -> Int {
+    return 1
   }
   
   func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
     let cell = tableView.dequeueReusableCell(withIdentifier: "BeaconCell", for: indexPath)
+    let entry = rangedBeacons[indexPath.row]
+    cell.textLabel?.text = "Major: \(entry.beacon.major), Minor:\(entry.beacon.minor)"
+    cell.detailTextLabel?.text = entry.lastSeen.debugDescription
     return cell
   }
 }
-
 
 extension ViewController : UIGestureRecognizerDelegate {
   func configureKeyboard() {
