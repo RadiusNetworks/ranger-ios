@@ -28,6 +28,10 @@
 	<array>
 		<string>armv7</string>
 	</array>
+  <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+  <string>We need to be able to range beacons.</string>
+  <key>NSLocationWhenInUseUsageDescription</key>
+  <string>We need to be able to range beacons.</string>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
