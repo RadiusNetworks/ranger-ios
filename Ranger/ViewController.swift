@@ -15,6 +15,8 @@ class ViewController: UIViewController {
   @IBOutlet weak var startStopButton: UIButton!
   @IBOutlet weak var tableView: UITableView!
   
+  let uuidDefaultsKey = "uuid"
+  
   var locationManager: CLLocationManager!
   var beaconRegion: CLBeaconRegion {
     return CLBeaconRegion(proximityUUID: UUID(uuidString: uuidTextField.text!)!, identifier: "Beacon Region")
@@ -54,6 +56,9 @@ class ViewController: UIViewController {
     configureKeyboard()
     locationManager = CLLocationManager()
     locationManager.delegate = self
+    if let storedUUID = UserDefaults.standard.string(forKey: uuidDefaultsKey) {
+      uuidTextField.text = storedUUID
+    }
   }
 
   @IBAction func startStopAction(_ sender: Any) {
@@ -141,5 +146,11 @@ extension ViewController : UIGestureRecognizerDelegate {
   
   @objc func handleTapInView() {
     self.view.endEditing(true)
+  }
+}
+
+extension ViewController : UITextFieldDelegate {
+  func textFieldDidEndEditing(_ textField: UITextField) {
+    UserDefaults.standard.set(uuidTextField.text, forKey: uuidDefaultsKey)
   }
 }
