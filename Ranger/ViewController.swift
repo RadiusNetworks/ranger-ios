@@ -15,8 +15,14 @@ class ViewController: UIViewController {
   @IBOutlet weak var startStopButton: UIButton!
   @IBOutlet weak var tableView: UITableView!
   
-  let uuidDefaultsKey = "uuid"
-  
+  static let uuidDefaultsKey = "uuid"
+  static let dateTimeFormatter: DateFormatter = {
+    let formatter = DateFormatter()
+    formatter.dateStyle = .medium
+    formatter.timeStyle = .long
+    return formatter
+  }()
+
   var locationManager: CLLocationManager!
   var beaconRegion: CLBeaconRegion {
     return CLBeaconRegion(proximityUUID: UUID(uuidString: uuidTextField.text!)!, identifier: "Beacon Region")
@@ -56,7 +62,7 @@ class ViewController: UIViewController {
     configureKeyboard()
     locationManager = CLLocationManager()
     locationManager.delegate = self
-    if let storedUUID = UserDefaults.standard.string(forKey: uuidDefaultsKey) {
+    if let storedUUID = UserDefaults.standard.string(forKey: ViewController.uuidDefaultsKey) {
       uuidTextField.text = storedUUID
     }
   }
@@ -131,7 +137,7 @@ extension ViewController : UITableViewDataSource {
     let cell = tableView.dequeueReusableCell(withIdentifier: "BeaconCell", for: indexPath)
     let entry = rangedBeacons[indexPath.row]
     cell.textLabel?.text = "Major: \(entry.beacon.major), Minor:\(entry.beacon.minor)"
-    cell.detailTextLabel?.text = entry.lastSeen.debugDescription
+    cell.detailTextLabel?.text = "Last Seen: \(ViewController.dateTimeFormatter.string(for: entry.lastSeen)!)"
     return cell
   }
 }
@@ -151,6 +157,6 @@ extension ViewController : UIGestureRecognizerDelegate {
 
 extension ViewController : UITextFieldDelegate {
   func textFieldDidEndEditing(_ textField: UITextField) {
-    UserDefaults.standard.set(uuidTextField.text, forKey: uuidDefaultsKey)
+    UserDefaults.standard.set(uuidTextField.text, forKey: ViewController.uuidDefaultsKey)
   }
 }
