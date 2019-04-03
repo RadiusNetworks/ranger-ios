@@ -9,19 +9,36 @@
 import UIKit
 import CoreLocation
 
+struct Beacon : Equatable {
+  let major: NSNumber
+  let minor: NSNumber
+  
+  static func == (lhs: Beacon, rhs: Beacon) -> Bool {
+    return
+      lhs.major == rhs.major &&
+        lhs.minor == rhs.minor
+  }
+  
+  init(major: NSNumber, minor: NSNumber) {
+    self.major = major
+    self.minor = minor
+  }
+  
+  init(beacon: CLBeacon) {
+    major = beacon.major
+    minor = beacon.minor
+  }
+}
+
+typealias BeaconEntry = (beacon: Beacon, firstSeen: Date, lastSeen: Date)
+
 class ViewController: UIViewController {
 
   @IBOutlet weak var uuidTextField: UITextField!
   @IBOutlet weak var startStopButton: UIButton!
   @IBOutlet weak var tableView: UITableView!
-  
+
   static let uuidDefaultsKey = "uuid"
-  static let dateTimeFormatter: DateFormatter = {
-    let formatter = DateFormatter()
-    formatter.dateStyle = .medium
-    formatter.timeStyle = .long
-    return formatter
-  }()
 
   var locationManager: CLLocationManager!
   var beaconRegion: CLBeaconRegion {
@@ -34,28 +51,7 @@ class ViewController: UIViewController {
     }
   }
   
-  struct Beacon : Equatable {
-    let major: NSNumber
-    let minor: NSNumber
-    
-    static func == (lhs: Beacon, rhs: Beacon) -> Bool {
-      return
-        lhs.major == rhs.major &&
-          lhs.minor == rhs.minor
-    }
-    
-    init(major: NSNumber, minor: NSNumber) {
-      self.major = major
-      self.minor = minor
-    }
-    
-    init(beacon: CLBeacon) {
-      major = beacon.major
-      minor = beacon.minor
-    }
-  }
-  
-  var rangedBeacons: [(beacon: Beacon, lastSeen: Date)] = []
+  var rangedBeacons: [BeaconEntry] = []
   
   override func viewDidLoad() {
     super.viewDidLoad()
@@ -72,8 +68,20 @@ class ViewController: UIViewController {
       stopRangingBeacons()
     }
     else {
-      startRangingBeacons()
+      if let uuidText = uuidTextField.text, let _ = UUID(uuidString: uuidText) {
+        startRangingBeacons()
+      }
+      else {
+        displayInvalidUUID()
+      }
     }
+  }
+  
+  func displayInvalidUUID() {
+    let invalidUUIDAlert = UIAlertController(title: "Error", message: "Please enter a valid UUID.", preferredStyle: .alert)
+    let okAction = UIAlertAction(title: "OK", style: .cancel)
+    invalidUUIDAlert.addAction(okAction)
+    present(invalidUUIDAlert, animated: true)
   }
 }
 
@@ -102,7 +110,8 @@ extension ViewController : CLLocationManagerDelegate {
       else {
         tableView.beginUpdates()
         let rangedBeaconCount = rangedBeacons.count
-        rangedBeacons.append((beacon: Beacon(major: beacon.major, minor: beacon.minor), lastSeen: Date()))
+        let rightNow = Date()
+        rangedBeacons.append((beacon: Beacon(major: beacon.major, minor: beacon.minor), firstSeen: rightNow, lastSeen: rightNow))
         tableView.insertRows(at: [IndexPath(row: rangedBeaconCount, section: 0)], with: .bottom)
         tableView.endUpdates()
       }
@@ -115,6 +124,7 @@ extension ViewController : CLLocationManagerDelegate {
   
   func startRangingBeacons() {
     rangingBeacons = true
+    rangedBeacons = []
     locationManager.startRangingBeacons(in: beaconRegion)
   }
   
@@ -134,10 +144,9 @@ extension ViewController : UITableViewDataSource {
   }
   
   func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-    let cell = tableView.dequeueReusableCell(withIdentifier: "BeaconCell", for: indexPath)
+    let cell = tableView.dequeueReusableCell(withIdentifier: "BeaconCell", for: indexPath) as! BeaconCell
     let entry = rangedBeacons[indexPath.row]
-    cell.textLabel?.text = "Major: \(entry.beacon.major), Minor:\(entry.beacon.minor)"
-    cell.detailTextLabel?.text = "Last Seen: \(ViewController.dateTimeFormatter.string(for: entry.lastSeen)!)"
+    cell.beaconEntry = entry
     return cell
   }
 }
