@@ -72,16 +72,16 @@ class ViewController: UIViewController {
         startRangingBeacons()
       }
       else {
-        displayInvalidUUID()
+        displayError(message: "Please enter a valid UUID.")
       }
     }
   }
   
-  func displayInvalidUUID() {
-    let invalidUUIDAlert = UIAlertController(title: "Error", message: "Please enter a valid UUID.", preferredStyle: .alert)
+  func displayError(message: String) {
+    let errorAlert = UIAlertController(title: "Error", message: message, preferredStyle: .alert)
     let okAction = UIAlertAction(title: "OK", style: .cancel)
-    invalidUUIDAlert.addAction(okAction)
-    present(invalidUUIDAlert, animated: true)
+    errorAlert.addAction(okAction)
+    present(errorAlert, animated: true)
   }
 }
 
@@ -96,6 +96,7 @@ extension ViewController : CLLocationManagerDelegate {
       
     default: ()
       startStopButton.isEnabled = false
+      displayError(message: "Inadequate location permission for ranging beacons.")
     }
   }
   
